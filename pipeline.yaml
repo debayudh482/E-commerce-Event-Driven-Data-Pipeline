@@ -1,0 +1,69 @@
+resources:
+  jobs:
+    ecom_event_driven_dbx_pipeline:
+      name: ecom_event_driven_dbx_pipeline
+      email_notifications:
+        on_success:
+          - emamiladress@gmail.com
+        on_failure:
+          - emamiladress@gmail.com
+      trigger:
+        pause_status: PAUSED
+        file_arrival:
+          url: /Volumes/demo-external-catalog/default/incremental_load/shipping_data/
+      tasks:
+        - task_key: customer_stage_load
+          notebook_task:
+            notebook_path: /Workspace/Users/email/ecom_incremental_data_load/02_customer_stage_load
+            source: WORKSPACE
+          existing_cluster_id: cluster-id
+        - task_key: inventory_stage_load
+          notebook_task:
+            notebook_path: /Workspace/Users/email/ecom_incremental_data_load/04_inventory_stage_load
+            source: WORKSPACE
+          existing_cluster_id: cluster-id
+        - task_key: order_stage_load
+          notebook_task:
+            notebook_path: /Workspace/Users/email/ecom_incremental_data_load/01_orders_stage_load
+            source: WORKSPACE
+          existing_cluster_id: cluster-id
+        - task_key: products_stage_load
+          notebook_task:
+            notebook_path: /Workspace/Users/email/ecom_incremental_data_load/03_products_stage_load
+              (1)
+            source: WORKSPACE
+          existing_cluster_id: cluster-id
+        - task_key: shipping_stage_load
+          notebook_task:
+            notebook_path: /Workspace/Users/email/ecom_incremental_data_load/05_shipping_stage_load
+            source: WORKSPACE
+          existing_cluster_id: cluster-id
+        - task_key: data_validation
+          depends_on:
+            - task_key: inventory_stage_load
+            - task_key: products_stage_load
+            - task_key: shipping_stage_load
+            - task_key: customer_stage_load
+            - task_key: order_stage_load
+          notebook_task:
+            notebook_path: /Workspace/Users/email/ecom_incremental_data_load/06_data_validation
+            source: WORKSPACE
+          existing_cluster_id: cluster-id
+        - task_key: data_enrichment
+          depends_on:
+            - task_key: data_validation
+          notebook_task:
+            notebook_path: /Workspace/Users/email/ecom_incremental_data_load/07_data_enrichment
+            source: WORKSPACE
+          existing_cluster_id: cluster-id
+        - task_key: final_merge
+          depends_on:
+            - task_key: data_enrichment
+          notebook_task:
+            notebook_path: /Workspace/Users/email/ecom_incremental_data_load/08_final_merge
+            source: WORKSPACE
+          existing_cluster_id: cluster-id
+      tags:
+        env: dev
+      queue:
+        enabled: true
